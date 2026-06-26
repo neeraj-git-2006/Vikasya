@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Heart, LayoutDashboard, Users, BookOpen, MessageSquare, BarChart3,
-  HandHeart, Building2, Bell, Search, LogOut, Menu, X, ChevronRight,
-  HelpCircle, Settings, Award, User
+  HandHeart, Building2, Bell, Search, LogOut, Menu, ChevronRight,
+  HelpCircle, Settings, User
 } from "lucide-react";
 import type { NavCtx, Page } from "./VikasyaRoot";
 
@@ -150,7 +150,7 @@ export function AppShell({ nav, children }: Props) {
   };
 
   const AvatarDisplay = ({ size = "sm" }: { size?: "sm" | "md" }) => {
-    const dim = size === "sm" ? "w-9 h-9" : "w-9 h-9";
+    const dim = size === "sm" ? "w-9 h-9" : "w-11 h-11";
     if (user.profilePic) {
       return (
         <img

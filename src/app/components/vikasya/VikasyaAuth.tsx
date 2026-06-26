@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
 import { Heart, Users, BookOpen, Building2, ArrowLeft, Eye, EyeOff, Sparkles } from "lucide-react";
 import type { UserType } from "./VikasyaRoot";
 import { supabase, isSupabaseConfigured } from "../../../utils/supabase";

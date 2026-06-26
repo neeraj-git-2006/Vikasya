@@ -1,2 +1,10 @@
 packages:
   - '.'
+
+onlyBuiltDependencies:
+  - '@tailwindcss/oxide'
+  - esbuild
+  - sqlite3
+
+overrides:
+  vite: '6.3.5'
