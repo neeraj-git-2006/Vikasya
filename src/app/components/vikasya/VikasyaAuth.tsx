@@ -1,37 +1,19 @@
 import { useState } from "react";
-import { Heart, Users, BookOpen, Building2, ArrowLeft, Eye, EyeOff, Sparkles } from "lucide-react";
+import { Heart, ArrowLeft, Eye, EyeOff, Sparkles } from "lucide-react";
 import type { UserType } from "./VikasyaRoot";
 import { supabase, isSupabaseConfigured } from "../../../utils/supabase";
 
 interface Props {
   onLogin: (type: UserType) => void;
   onBack: () => void;
+  preselectedRole?: "volunteer" | "beneficiary" | "org";
 }
 
-const roles = [
-  {
-    type: "volunteer" as UserType,
-    icon: Users,
-    label: "Volunteer",
-    desc: "Teach skills, mentor, or provide companionship",
-  },
-  {
-    type: "beneficiary" as UserType,
-    icon: BookOpen,
-    label: "Learner",
-    desc: "Learn new skills or receive community support",
-  },
-  {
-    type: "org" as UserType,
-    icon: Building2,
-    label: "Organization",
-    desc: "Manage old age homes, orphanages, or programs",
-  },
-];
 
-export function VikasyaAuth({ onLogin, onBack }: Props) {
+
+export function VikasyaAuth({ onLogin, onBack, preselectedRole = "volunteer" }: Props) {
   const [isLogin, setIsLogin] = useState(true);
-  const [selectedRole, setSelectedRole] = useState<UserType>("volunteer");
+  const [selectedRole, setSelectedRole] = useState<UserType>(preselectedRole);
   const [showPw, setShowPw] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", password: "", org: "" });
   const [error, setError] = useState<string | null>(null);
@@ -55,13 +37,12 @@ export function VikasyaAuth({ onLogin, onBack }: Props) {
           if (!data.user) throw new Error("No user returned from authentication.");
 
           // Fetch user profile details from public users table
-          const { data: profile, error: profileError } = await supabase
+          // Non-fatal: falls back to auth metadata if table not set up yet
+          const { data: profile } = await supabase
             .from('users')
             .select('*')
             .eq('id', data.user.id)
             .maybeSingle();
-
-          if (profileError) throw profileError;
 
           const loggedInUser = {
             id: data.user.id,
@@ -99,6 +80,7 @@ export function VikasyaAuth({ onLogin, onBack }: Props) {
           if (!data.user) throw new Error("Registration failed.");
 
           // Insert user profile record in public users table
+          // Non-fatal: if table doesn't exist or RLS blocks it, auth still works
           const { error: insertError } = await supabase
             .from('users')
             .insert([{
@@ -109,7 +91,9 @@ export function VikasyaAuth({ onLogin, onBack }: Props) {
               org: selectedRole === 'org' ? form.org : null
             }]);
 
-          if (insertError) throw insertError;
+          if (insertError) {
+            console.warn('Profile insert failed (run Supabase schema setup):', insertError.message);
+          }
 
           const loggedInUser = {
             id: data.user.id,
@@ -141,6 +125,12 @@ export function VikasyaAuth({ onLogin, onBack }: Props) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
+
+        // Guard against Vercel returning an HTML error page instead of JSON
+        const contentType = response.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+          throw new Error(`Server error (${response.status}): API is not available. Please ensure the backend is deployed and configured correctly.`);
+        }
 
         const resData = await response.json();
 
@@ -246,34 +236,6 @@ export function VikasyaAuth({ onLogin, onBack }: Props) {
                     onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                     className="w-full bg-white border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                   />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-foreground mb-2">Select Your Role</label>
-                  <div className="grid grid-cols-3 gap-3">
-                    {roles.map(r => {
-                      const Icon = r.icon;
-                      const isSelected = selectedRole === r.type;
-                      return (
-                        <button
-                          key={r.type}
-                          type="button"
-                          onClick={() => setSelectedRole(r.type)}
-                          className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all text-center ${
-                            isSelected 
-                              ? 'border-primary bg-sky-50/50 text-primary' 
-                              : 'border-border bg-white text-muted-foreground hover:border-muted-foreground/30'
-                          }`}
-                        >
-                          <Icon className="w-5 h-5 mb-1.5" />
-                          <span className="text-xs font-bold">{r.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {roles.find(r => r.type === selectedRole)?.desc}
-                  </p>
                 </div>
 
                 {!isLogin && selectedRole === "org" && (

@@ -38,6 +38,7 @@ export interface NavCtx {
 
 export function VikasyaRoot() {
   const [page, setPage] = useState<Page>("landing");
+  const [preselectedRole, setPreselectedRole] = useState<"volunteer" | "beneficiary" | "org">("volunteer");
   const [userType, setUserType] = useState<UserType>(() => {
     try {
       const stored = localStorage.getItem("vikasya_user");
@@ -92,8 +93,8 @@ export function VikasyaRoot() {
 
   const ctx: NavCtx = { page, userType, navigate, logout };
 
-  if (page === "landing") return <VikasyaLanding onGetStarted={() => setPage("auth")} onLogin={() => setPage("auth")} />;
-  if (page === "auth") return <VikasyaAuth onLogin={login} onBack={() => setPage("landing")} />;
+  if (page === "landing") return <VikasyaLanding onGetStarted={(role) => { setPreselectedRole(role || 'volunteer'); setPage("auth"); }} onLogin={(role) => { setPreselectedRole(role || 'volunteer'); setPage("auth"); }} />;
+  if (page === "auth") return <VikasyaAuth preselectedRole={preselectedRole} onLogin={login} onBack={() => setPage("landing")} />;
   if (page === "onboarding") return <Onboarding nav={ctx} />;
 
   const pageMap: Record<string, ReactElement> = {

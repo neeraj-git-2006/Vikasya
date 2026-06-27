@@ -7,8 +7,8 @@ import {
 } from "lucide-react";
 
 interface Props {
-  onGetStarted: () => void;
-  onLogin: () => void;
+  onGetStarted: (role?: "volunteer" | "beneficiary" | "org") => void;
+  onLogin: (role?: "volunteer" | "beneficiary" | "org") => void;
 }
 
 
@@ -97,9 +97,23 @@ export function VikasyaLanding({ onGetStarted, onLogin }: Props) {
   const [latestMatch, setLatestMatch] = useState("Priya ↔ Kamala Devi");
   const [volunteerCount, setVolunteerCount] = useState<number | null>(null);
 
+  const safeJsonFetch = async (url: string) => {
+    try {
+      const res = await fetch(url);
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        console.warn(`API ${url} returned non-JSON response (${res.status}). Server may not be configured.`);
+        return null;
+      }
+      return await res.json();
+    } catch (err) {
+      console.error(`Error fetching ${url}:`, err);
+      return null;
+    }
+  };
+
   useEffect(() => {
-    fetch('/api/stats/impact')
-      .then(res => res.json())
+    safeJsonFetch('/api/stats/impact')
       .then(data => {
         if (data && data.activeVolunteers) {
           setLiveStats([
@@ -109,28 +123,23 @@ export function VikasyaLanding({ onGetStarted, onLogin }: Props) {
             { value: "95", label: "Cities Covered", icon: MapPin },
           ]);
         }
-      })
-      .catch(err => console.error('Error fetching dynamic stats:', err));
+      });
 
-    fetch('/api/matches')
-      .then(res => res.json())
+    safeJsonFetch('/api/matches')
       .then(data => {
         if (data && data.connections && data.connections.length > 0) {
           const latest = data.connections[data.connections.length - 1];
           setLatestMatch(`${latest.volunteer_name} ↔ ${latest.beneficiary_name}`);
         }
-      })
-      .catch(err => console.error('Error fetching dynamic matches:', err));
+      });
 
     const fetchVolunteerCountFromApi = () => {
-      fetch('/api/matches')
-        .then(res => res.json())
+      safeJsonFetch('/api/matches')
         .then(data => {
           if (data && data.volunteers) {
             setVolunteerCount(data.volunteers.length);
           }
-        })
-        .catch(err => console.error('Error fetching volunteer count from API:', err));
+        });
     };
 
     if (supabase) {
@@ -176,7 +185,7 @@ export function VikasyaLanding({ onGetStarted, onLogin }: Props) {
             <a href="#orgs" className="hover:text-primary transition-colors">Organizations</a>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={onLogin} className="text-sm font-semibold text-primary hover:underline px-3 py-1.5">
+            <button onClick={() => onLogin()} className="text-sm font-semibold text-primary hover:underline px-3 py-1.5">
               Sign In
             </button>
           </div>
@@ -208,13 +217,13 @@ export function VikasyaLanding({ onGetStarted, onLogin }: Props) {
             </p>
             <div className="flex flex-wrap gap-4">
               <button
-                onClick={onGetStarted}
+                onClick={() => onGetStarted('volunteer')}
                 className="flex items-center gap-2 bg-primary text-white font-semibold px-7 py-3.5 rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-sky-200"
               >
                 Start Volunteering <ArrowRight className="w-4 h-4" />
               </button>
               <button
-                onClick={onGetStarted}
+                onClick={() => onGetStarted('beneficiary')}
                 className="flex items-center gap-2 bg-white text-foreground font-semibold px-7 py-3.5 rounded-xl border border-border hover:bg-secondary/50 transition-colors"
               >
                 I Need Support <ChevronRight className="w-4 h-4" />
@@ -436,13 +445,13 @@ export function VikasyaLanding({ onGetStarted, onLogin }: Props) {
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
             <button
-              onClick={onGetStarted}
+              onClick={() => onGetStarted('volunteer')}
               className="bg-white text-primary font-semibold px-8 py-3.5 rounded-xl hover:bg-sky-50 transition-colors shadow-lg"
             >
               Become a Volunteer
             </button>
             <button
-              onClick={onGetStarted}
+              onClick={() => onGetStarted('org')}
               className="bg-white/10 text-white font-semibold px-8 py-3.5 rounded-xl border border-white/20 hover:bg-white/20 transition-colors"
             >
               Register Organization
